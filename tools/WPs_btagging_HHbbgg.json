@@ -1,0 +1,23 @@
+{
+    "2022preEE" : {
+        "PNetTight": 0.6734,
+        "PNetMedium": 0.245,
+        "PNetLoose": 0.047
+    },
+    "2022postEE" : {
+        "PNetTight": 0.6915,
+        "PNetMedium": 0.2605,
+        "PNetLoose": 0.0499
+    },
+    "2023preBPix" : {
+	"PNetTight": 0.6172,
+        "PNetMedium": 0.1917,
+        "PNetLoose": 0.0358
+    },
+    "2023postBPix" : {
+        "PNetTight": 0.6133,
+        "PNetMedium": 0.1919,
+        "PNetLoose": 0.0359
+    }
+}
+

@@ -1,0 +1,34 @@
+# Ignore ROOT files
+*.root
+
+# Ignore Parquet files
+*.parquet
+
+# Ignore image files
+*.png
+
+# Ignore PDF files
+*.pdf
+
+# Ignore CSV files
+*.csv
+
+*.tar
+
+*.tar.xz
+
+*.log
+
+*.pl
+
+systematics/JSONs/
+metaconditions/corrections/2017_Legacy_xgb/
+
+
+process/
+
+mgbasedir/
+
+InputCards/
+
+decay_chains.txt

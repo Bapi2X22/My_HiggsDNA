@@ -1,0 +1,79 @@
+# process_map.yaml is used in prepare_output_file.py to map incoming name to a standard naming convention
+GluGluHtoGG:  ggh
+GluGluHto2G:  ggh
+ggh:          ggh
+ttHtoGG:      tth
+ttHto2G:      tth
+tth:          tth
+tHtoGG:       tth
+tHto2G:       tth
+th:           th
+VHtoGG:       vh
+VHto2G:       vh
+vh:           vh
+WHltoGG:      whl
+WHlto2G:      whl
+whl:          whl
+WHtoGG:       wh
+WHto2G:       wh
+wh:           wh
+ZHtoGG:       zh
+ZHto2G:       zh
+zh:           zh
+ZHltoGG:      zhl
+ZHlto2G:      zhl
+zhl:          zhl
+VBFHtoGG:     vbf
+VBFHto2G:     vbf
+vbf:          vbf
+bbHtoGG:      bbh
+bbHto2G:      bbh
+DYto2L:       dy
+GG-Box:       ggbox
+GJet:         gjet
+WHM20-RunIISummer20UL16NanoAODAPVv2:   WHM20Y2016APV_125
+WHM20-RunIISummer20UL16NanoAODv2:      WHM20Y2016_125
+WHM20-RunIISummer20UL17NanoAODv2:      WHM20Y2017_125
+WHM20-RunIISummer20UL18NanoAODv2:      WHM20Y2018_125
+
+WHM25-RunIISummer20UL16NanoAODAPVv2:   WHM25Y2016APV_125
+WHM25-RunIISummer20UL16NanoAODv2:      WHM25Y2016_125
+WHM25-RunIISummer20UL17NanoAODv2:      WHM25Y2017_125
+WHM25-RunIISummer20UL18NanoAODv2:      WHM25Y2018_125
+
+WHM30-RunIISummer20UL16NanoAODAPVv2:   WHM30Y2016APV_125
+WHM30-RunIISummer20UL16NanoAODv2:      WHM30Y2016_125
+WHM30-RunIISummer20UL17NanoAODv2:      WHM30Y2017_125
+WHM30-RunIISummer20UL18NanoAODv2:      WHM30Y2018_125
+
+WHM35-RunIISummer20UL16NanoAODAPVv2:   WHM35Y2016APV_125
+WHM35-RunIISummer20UL16NanoAODv2:      WHM35Y2016_125
+WHM35-RunIISummer20UL17NanoAODv2:      WHM35Y2017_125
+WHM35-RunIISummer20UL18NanoAODv2:      WHM35Y2018_125
+
+WHM40-RunIISummer20UL16NanoAODAPVv2:   WHM40Y2016APV_125
+WHM40-RunIISummer20UL16NanoAODv2:      WHM40Y2016_125
+WHM40-RunIISummer20UL17NanoAODv2:      WHM40Y2017_125
+WHM40-RunIISummer20UL18NanoAODv2:      WHM40Y2018_125
+
+WHM45-RunIISummer20UL16NanoAODAPVv2:   WHM45Y2016APV_125
+WHM45-RunIISummer20UL16NanoAODv2:      WHM45Y2016_125
+WHM45-RunIISummer20UL17NanoAODv2:      WHM45Y2017_125
+WHM45-RunIISummer20UL18NanoAODv2:      WHM45Y2018_125
+
+WHM50-RunIISummer20UL16NanoAODAPVv2:   WHM50Y2016APV_125
+WHM50-RunIISummer20UL16NanoAODv2:      WHM50Y2016_125
+WHM50-RunIISummer20UL17NanoAODv2:      WHM50Y2017_125
+WHM50-RunIISummer20UL18NanoAODv2:      WHM50Y2018_125
+
+WHM55-RunIISummer20UL16NanoAODAPVv2:   WHM55Y2016APV_125
+WHM55-RunIISummer20UL16NanoAODv2:      WHM55Y2016_125
+WHM55-RunIISummer20UL17NanoAODv2:      WHM55Y2017_125
+WHM55-RunIISummer20UL18NanoAODv2:      WHM55Y2018_125
+
+WHM60-RunIISummer20UL16NanoAODAPVv2:   WHM60Y2016APV_125
+WHM60-RunIISummer20UL16NanoAODv2:      WHM60Y2016_125
+WHM60-RunIISummer20UL17NanoAODv2:      WHM60Y2017_125
+WHM60-RunIISummer20UL18NanoAODv2:      WHM60Y2018_125
+
+Data:         data

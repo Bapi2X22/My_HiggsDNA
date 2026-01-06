@@ -30,6 +30,8 @@ def photon_preselections_ggH_BBGG(self,
         wp_medium = 0.2783
     elif year == "2022EE":
         wp_medium = 0.2783
+    elif year == "2024":
+        wp_medium = 0.2783
     else:
         raise ValueError(f"Unknown year {year}")
 

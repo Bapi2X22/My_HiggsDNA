@@ -4,7 +4,7 @@ from higgs_dna.tools.SC_eta import add_photon_SC_eta
 from higgs_dna.tools.EELeak_region import veto_EEleak_flag
 from higgs_dna.tools.EcalBadCalibCrystal_events import remove_EcalBadCalibCrystal_events
 from higgs_dna.tools.gen_helpers import get_fiducial_flag, get_genJets, get_higgs_gen_attributes
-from higgs_dna.selections.photon_preselections_ggH_BBGG_with_cat import photon_preselections_ggH_BBGG_with_cat
+from higgs_dna.selections.photon_preselections_ggH_BBGG_with_cat_ptcut_first import photon_preselections_ggH_BBGG_with_cat
 from higgs_dna.selections.lepton_selections import select_electrons, select_muons
 from higgs_dna.selections.jet_selections import select_jets, jetvetomap
 from higgs_dna.selections.lumi_selections import select_lumis
@@ -247,18 +247,18 @@ class HtoBBGG_ggH_with_cat(HggBaseProcessor):
             do_variation = variation  # We can also simplify this a bit but for now it works
 
             # photon preselection
-            # Result = photon_preselections_ggH_BBGG_with_cat(self, photons, events, year=self.year[dataset_name][0])
+            Result = photon_preselections_ggH_BBGG_with_cat(self, photons, events, year=self.year[dataset_name][0])
 
-            # pho1, bjet1 = Result['cat1']
-            # pho2, bjet2 = Result['cat2']
-            # pho3, bjet3 = Result['cat3']
+            pho1, bjet1 = Result['cat1']
+            pho2, bjet2 = Result['cat2']
+            pho3, bjet3 = Result['cat3']
 
-            pho1 = photons
-            pho2 = photons
-            pho3 = photons
-            bjet1 = jets
-            bjet2 = jets
-            bjet3 = jets
+            # pho1 = photons
+            # pho2 = photons
+            # pho3 = photons
+            # bjet1 = jets
+            # bjet2 = jets
+            # bjet3 = jets
 
             # leps = awkward.concatenate([events.Electron, events.Muon], axis=1)
             # photons, b_jets, leps = photons, jets, leps

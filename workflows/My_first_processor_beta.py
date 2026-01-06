@@ -5,8 +5,10 @@ from higgs_dna.tools.EELeak_region import veto_EEleak_flag
 from higgs_dna.tools.EcalBadCalibCrystal_events import remove_EcalBadCalibCrystal_events
 from higgs_dna.tools.gen_helpers import get_fiducial_flag, get_genJets, get_higgs_gen_attributes
 # from higgs_dna.selections.photon_selections import photon_preselection
-from higgs_dna.selections.photon_preselections import photon_preselections
+# from higgs_dna.selections.photon_preselections import photon_preselections
 from higgs_dna.selections.photon_preselections_test import photon_preselections_test
+# from higgs_dna.selections.photon_preselections_ggH_BBGG import photon_preselections_ggH_BBGG
+from higgs_dna.selections.photon_preselections_ggH_BBGG_ptcut_first import photon_preselections_ggH_BBGG_ptcut_first
 from higgs_dna.selections.lepton_selections import select_electrons, select_muons
 from higgs_dna.selections.jet_selections import select_jets, jetvetomap
 from higgs_dna.selections.lumi_selections import select_lumis
@@ -311,6 +313,8 @@ class My_first_processor_beta(HggBaseProcessor):
 
             # photon preselection
             photons, b_jets, leps = photon_preselections_test(self, photons, events, year=self.year[dataset_name][0])
+            # photons, b_jets, bquarks = photon_preselections_ggH_BBGG(self, photons, events, year=self.year[dataset_name][0])
+            # photons, b_jets, bquarks = photon_preselections_ggH_BBGG_ptcut_first(self, photons, events, year=self.year[dataset_name][0])
             # leps = awkward.concatenate([events.Electron, events.Muon], axis=1)
             # photons, b_jets, leps = photons, jets, leps
             Nphotons = awkward.num(photons.pt)
@@ -381,13 +385,15 @@ class My_first_processor_beta(HggBaseProcessor):
             # bbgg["pt"] = diphoton_4mom.pt
             bbgg["dipho_eta"] = diphoton_4mom.eta
             bbgg["dipho_phi"] = diphoton_4mom.phi
-            bbgg["dipho_mass"] = diphoton_4mom.mass
+            # bbgg["dipho_mass"] = diphoton_4mom.mass
+            bbgg["mass"] = diphoton_4mom.mass
             bbgg["dipho_charge"] = diphoton_4mom.charge
             bbgg["dijet_pt"] = dijet_4mom.pt
             bbgg["dijet_eta"] = dijet_4mom.eta
             bbgg["dijet_phi"] = dijet_4mom.phi
             bbgg["dijet_mass"] = dijet_4mom.mass
-            bbgg["mass"] = bbgg_4mom.mass
+            # bbgg["mass"] = bbgg_4mom.mass
+            bbgg["4_mass"] = bbgg_4mom.mass
             bbgg["Nphotons"] = Nphotons
             # bbgg["dijet_charge"] = dijet_4mom.charge
 
@@ -877,9 +883,12 @@ class My_first_processor_beta(HggBaseProcessor):
             if self.data_kind == "mc":
                 # initiate Weight container here, after selection, since event selection cannot easily be applied to weight container afterwards
                 event_weights = Weights(size=len(events[selection_mask]))
+                print("I am here: ")
+                print("event_weights:", event_weights.weight())
 
                 # corrections to event weights:
                 for correction_name in correction_names:
+                    print("correction_name:", correction_name)
                     if correction_name in available_weight_corrections:
                         logger.info(
                             f"Adding correction {correction_name} to weight collection of dataset {dataset_name}"
@@ -899,7 +908,9 @@ class My_first_processor_beta(HggBaseProcessor):
 
                 # systematic variations of event weights go to nominal output dataframe:
                 if do_variation == "nominal":
+                    print("I am here 2: ")
                     for systematic_name in systematic_names:
+                        print("systematic_name:", systematic_name)
                         if systematic_name in available_weight_systematics:
                             logger.info(
                                 f"Adding systematic {systematic_name} to weight collection of dataset {dataset_name}"
@@ -951,8 +962,11 @@ class My_first_processor_beta(HggBaseProcessor):
                                 )
 
                 bbgg["weight_central"] = event_weights.weight()
+                print("Weight central before variations: ", bbgg["weight_central"])
                 # Store variations with respect to central weight
                 if do_variation == "nominal":
+                    print("I am here 3: ")
+                    print("event_weights.variations:", event_weights.variations)
                     if len(event_weights.variations):
                         logger.info(
                             "Adding systematic weight variations to nominal output file."
@@ -961,6 +975,10 @@ class My_first_processor_beta(HggBaseProcessor):
                         bbgg["weight_" + modifier] = event_weights.weight(
                             modifier=modifier
                         )
+                        print("I am here 4: ")
+                        print("Event weight for modifier ", modifier, ": ", event_weights.weight(modifier=modifier))
+                print("weight central: ", bbgg["weight_central"])
+                print("I am here 5: ")
 
                 # Multiply weight by genWeight for normalisation in post-processing chain
                 event_weights._weight = (
@@ -968,9 +986,11 @@ class My_first_processor_beta(HggBaseProcessor):
                     * bbgg["weight_central"]
                 )
                 bbgg["weight"] = event_weights.weight()
+                print("Final event weight: ", bbgg["weight"])
 
             # Add weight variables (=1) for data for consistent datasets
             else:
+                print("I am here 6: data weights")
                 bbgg["weight_central"] = awkward.ones_like(
                     bbgg["event"]
                 )
@@ -1140,6 +1160,7 @@ class My_first_processor_beta(HggBaseProcessor):
             if self.output_format == "root":
                 df_bbgg = diphoton_list_to_pandas(self, bbgg)  # same converter works fine
             else:
+                print("I am here 7: stored weight: ", bbgg["weight"])
                 akarr_bbgg = diphoton_ak_array(self, bbgg)
                 akarr_bbgg = akarr_bbgg[[f for f in akarr_bbgg.fields if "lead_fixedGridRhoAll" not in f]]
 

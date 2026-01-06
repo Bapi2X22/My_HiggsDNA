@@ -127,6 +127,9 @@ def photon_preselections(self,
     elif year == "2018":
         # ele_pt_cut, mu_pt_cut = 33, 26
         ele_pt_cut, mu_pt_cut = 33, 26
+    elif year == "2024":
+        # ele_pt_cut, mu_pt_cut = 33, 26
+        ele_pt_cut, mu_pt_cut = 33, 26
 
     else:
         raise ValueError(f"Unknown year {year}")
@@ -134,7 +137,7 @@ def photon_preselections(self,
     electrons = events.Electron
 
     good_electrons = (
-        (electrons.pt > 33.0) &
+        (electrons.pt > ele_pt_cut) &
         (np.abs(electrons.eta) < 2.5) &  # keep within tracker acceptance
         ~((np.abs(electrons.eta) > 1.44) & (np.abs(electrons.eta) < 1.57)) &  # remove transition
         (electrons.mvaIso_WP80) &        # tight MVA ID

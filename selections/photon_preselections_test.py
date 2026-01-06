@@ -128,7 +128,9 @@ def photon_preselections_test(self,
     elif year == "2018":
         # ele_pt_cut, mu_pt_cut = 33, 26
         ele_pt_cut, mu_pt_cut = 33, 26
-
+    elif year == "2024":
+        # ele_pt_cut, mu_pt_cut = 33, 26
+        ele_pt_cut, mu_pt_cut = 33, 26
     else:
         raise ValueError(f"Unknown year {year}")
     
@@ -143,6 +145,8 @@ def photon_preselections_test(self,
     elif year == "2017":
         wp_medium = 0.304
     elif year == "2018":
+        wp_medium = 0.2783
+    elif year == "2024":
         wp_medium = 0.2783
 
     else:
@@ -190,8 +194,8 @@ def photon_preselections_test(self,
     good_jets = (
         (events.Jet.pt > 20)
         & (np.abs(events.Jet.eta) < 2.4)
-        # & (events.Jet.btagDeepFlavB > wp_medium)
-        & (events.Jet.btagCSVV2 > wp_medium)
+        & (events.Jet.btagDeepFlavB > wp_medium)
+        # & (events.Jet.btagCSVV2 > wp_medium)
     )
     selected_bjets = events.Jet[good_jets] 
     print("selected_b_jets: ", selected_bjets)

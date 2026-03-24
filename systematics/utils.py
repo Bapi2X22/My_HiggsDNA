@@ -72,6 +72,9 @@ def check_corr_syst_combinations(corrections_dict, systematics_dict, logger):
                     "scale" in chosen_syst.lower()
                     or "jec" in chosen_syst.lower()
                     or "jer" in chosen_syst.lower()
+                    or "resolution" in chosen_syst.lower()  # for muon resolution where the correction is called scare
+                    or "higgs_plus_" in chosen_syst.lower()
+                    or "MET" in chosen_syst.lower()
                 ):
                     continue
                 logger.info(

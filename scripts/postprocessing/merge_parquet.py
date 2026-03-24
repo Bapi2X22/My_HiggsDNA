@@ -214,12 +214,16 @@ def main():
         if(args.do_b_weight_normalisation): IsBtagNorm_sys_arr,WeightSum_preBTag_arr,WeightSum_postBTag_arr,WeightSum_postBTag_sys_arr = Get_WeightSum_Btag(source_paths,logger)
 
         sum_genw_beforesel_arr = []
+        # breakpoint()
         for i, source_path in enumerate(source_paths):
+            print("source_path: ", source_path)
             source_files = glob.glob("%s/*.parquet" % source_path)
+            print("source_files: ", source_files)
             sum_genw_beforesel = 0
             for f in source_files:
                 sum_genw_beforesel += float(pq.read_table(f).schema.metadata[b'sum_genw_presel'])
             sum_genw_beforesel_arr.append(sum_genw_beforesel)
+        print("sum_genw_beforesel_arr: ", sum_genw_beforesel_arr)
         logger.info(
             "Successfully extracted sum of gen weights (before selection)"
         )

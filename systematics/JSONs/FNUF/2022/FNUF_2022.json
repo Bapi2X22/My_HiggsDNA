@@ -1,0 +1,130 @@
+{
+	"schema_version": 2,
+	"description": "FNUF for 2022, taking the numbers from 2018 provided by Badder, slightly increasing the uncertainty. Mainly relevant for HIG-23-014.",
+	"corrections": [
+		{
+			"name": "FNUF",
+			"version": 1,
+			"inputs": [
+				{
+					"name": "systematic",
+					"type": "string",
+					"description": "Systematic variation"
+				},
+				{
+					"name": "eta",
+					"type": "real",
+					"description": "Photon eta"
+				},
+				{
+					"name": "r9",
+					"type": "real",
+					"description": "Photon full 5x5 R9, ratio E3x3/ERAW, where E3x3 is the energy sum of the 3 by 3 crystals surrounding the supercluster seed crystal and ERAW is the raw energy sum of the supercluster"
+				}
+			],
+			"output": {
+				"name": "Ecorr",
+				"type": "real",
+				"description": "Multiplicative correction to photon energy"
+			},
+			"data": {
+				"nodetype": "category",
+				"input": "systematic",
+				"content": [
+					{
+						"key": "nominal",
+						"value": {
+							"nodetype": "multibinning",
+							"inputs": [
+								"eta",
+								"r9"
+							],
+							"edges": [
+								[
+									0.0,
+									1.5,
+									6.0
+								],
+								[
+									0.0,
+									0.975,
+									999.0
+								]
+							],
+							"content": [
+								1.0,
+								1.0,
+								1.0,
+								1.0
+							],
+							"flow": "clamp"
+						}
+					},
+					{
+						"key": "up",
+						"value": {
+							"nodetype": "multibinning",
+							"inputs": [
+								"eta",
+								"r9"
+							],
+							"edges": [
+								[
+									0.0,
+									1.5,
+									6.0
+								],
+								[
+									0.0,
+									0.975,
+									999.0
+								]
+							],
+							"content": [
+								1.0,
+								1.0013875,
+								1.0,
+								1.0031
+						
+			
+							],
+							"flow": "clamp"
+						}
+					},
+					{
+						"key": "down",
+						"value": {
+							"nodetype": "multibinning",
+							"inputs": [
+								"eta",
+								"r9"
+							],
+							"edges": [
+								[
+									0.0,
+									1.5,
+									6.0
+								],
+								[
+									0.0,
+									0.975,
+									999.0
+								]
+							],
+							"content": [
+								1.0,
+								0.9986125,
+								1.0,
+								0.9969
+								
+								
+								
+							],
+							"flow": "clamp"
+						}
+					}
+				]
+			}
+		}
+	]
+}

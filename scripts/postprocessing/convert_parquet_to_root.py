@@ -298,9 +298,22 @@ def main():
                 # an improvement (not sure if needed) may be to also write an empty TTree to not confuse FinalFit
                 if len(df_dict["NOMINAL"][cat]["weight"]):
                     for branch in df_dict["NOMINAL"][cat]:
+                        # arr = df_dict["NOMINAL"][cat][branch]
+
+                        # Fix ONLY PS weights
+                        # if branch.startswith("weight_PS_"):
+                        #     if ak.any(ak.is_none(arr)):
+                        #         arr = ak.fill_none(arr, 0.0)
+                        # arr = ak.flatten(arr, axis=0)
+
+                        # Assign back
+                        # df_dict["NOMINAL"][cat][branch] = arr
                         # here I had to add a flattening step to help uproot with the type of the awkward arrays,
                         # if you don't flatten (event if you don't have a nested field) you end up having a type like (len_of_array) * ?type, which make uproot very mad apparently
                         df_dict["NOMINAL"][cat][branch] = ak.flatten(df_dict["NOMINAL"][cat][branch], axis=0)
+                        # for branch in df_dict["NOMINAL"][cat]:
+                        #     arr = df_dict["NOMINAL"][cat][branch]
+                            # print(branch, len(arr))
                     file[names[cat]] = df_dict["NOMINAL"][cat]
                     if notag:
                         file[name_notag] = df_dict["NOMINAL"][cat]  # this is wrong, to be fixed

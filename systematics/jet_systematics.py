@@ -51,7 +51,7 @@ def JERC_jet(pt, events, year="2017", skip_JER=False, skip_JEC=False, is_correct
                 "pt_gen": "ptGenJet",
                 "pt_raw": "ptRaw",
                 "mass_raw": "massRaw",
-                "rho": "Rho",
+                "rho_value": "Rho",
             }
         },
         "2017": {
@@ -86,7 +86,7 @@ def JERC_jet(pt, events, year="2017", skip_JER=False, skip_JEC=False, is_correct
                 "pt_gen": "ptGenJet",
                 "pt_raw": "ptRaw",
                 "mass_raw": "massRaw",
-                "rho": "Rho",
+                "rho_value": "Rho",
             }
         }
     }
@@ -134,7 +134,7 @@ def JERC_jet(pt, events, year="2017", skip_JER=False, skip_JEC=False, is_correct
     jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
     jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
     jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
-    jets["rho"] = ak.broadcast_arrays(events.Rho.fixedGridRhoFastjetAll, jets.pt)[0]
+    jets["rho_value"] = ak.broadcast_arrays(events.Rho.fixedGridRhoFastjetAll, jets.pt)[0]
 
     events_cache = events.caches[0]
     if year == "2022postEE":
@@ -154,7 +154,7 @@ def JERC_jet(pt, events, year="2017", skip_JER=False, skip_JEC=False, is_correct
     jet_factory = CorrectedJetsFactory(name_map, jec_stack)
     if is_correction:
         corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
-        events.Jet = corrected_jets
+        events["Jet"] = corrected_jets
 
         return events
 

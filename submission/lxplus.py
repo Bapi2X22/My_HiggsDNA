@@ -46,7 +46,7 @@ class LXPlusVanillaSubmitter:
         sample_dict,
         args_string,
         queue="longlunch",
-        memory="10GB",
+        memory="2GB",
         cluster_per_sample=True,
     ):
         self.datetime_extension = subprocess.getoutput("date +%Y%m%d_%H%M%S")
@@ -155,6 +155,8 @@ class LXPlusVanillaSubmitter:
                     submit_file.write(f"output_destination = {job_file_dir}\n")
                     submit_file.write(f"request_memory = {self.memory}\n")
                     submit_file.write("getenv = True\n")
+                    submit_file.write("when_to_transfer_output = ON_EXIT_OR_EVICT\n")
+                    submit_file.write("transfer_output_files=\"\"\n")
                     submit_file.write(f'+JobFlavour = "{self.queue}"\n')
                     submit_file.write('on_exit_remove = (ExitBySignal == False) && (ExitCode == 0)\n')
                     submit_file.write('on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)\n')
@@ -196,6 +198,8 @@ class LXPlusVanillaSubmitter:
                         submit_file.write(f"output_destination = {job_file_dir}\n")
                         submit_file.write(f"request_memory = {self.memory}\n")
                         submit_file.write("getenv = True\n")
+                        submit_file.write("when_to_transfer_output = ON_EXIT_OR_EVICT\n")
+                        submit_file.write("transfer_output_files=\"\"\n")
                         submit_file.write(f'+JobFlavour = "{self.queue}"\n')
                         submit_file.write('on_exit_remove = (ExitBySignal == False) && (ExitCode == 0)\n')
                         submit_file.write('on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)\n')

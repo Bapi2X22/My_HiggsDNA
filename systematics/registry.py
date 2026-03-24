@@ -20,10 +20,15 @@ from .event_weight_systematics import (
     AlphaS,
     PartonShower,
     cTagSF,
+    cTagSF_WPs,
     bTagShapeSF,
     bTagFixedWP,
     Zpt,
-    muonSFs
+    muonSFs,
+    electronSFs,
+    electron_reco_sf_for_Zee_val_photons,
+    atLeast1LeptonIdSF,
+    Higgs_plus_HF_syst,
 )
 from .jet_systematics import (
     jet_pt_scale_dummy,
@@ -39,6 +44,10 @@ from .electron_systematics import (
 
 from .muon_systematics import (
     muon_pt_scare
+)
+
+from .MET_systematics import (
+    MET_syst_Unclustered
 )
 
 from functools import partial
@@ -204,13 +213,20 @@ object_systematics = {
             "varying_function": partial(Electron_Smearing_Trad, is_correction=False),
         },
     },
-    # Muon scale and smearing
-    "MuonScaRe": {
+    "MuonScale": {
         "object": "Muon",
         "args": {
             "kind": "UpDownSystematic",
             "what": "pt",
-            "varying_function": partial(muon_pt_scare, is_correction=False),
+            "varying_function": partial(muon_pt_scare, is_correction=False, unc_type="Scale"),
+        },
+    },
+    "MuonResolution": {
+        "object": "Muon",
+        "args": {
+            "kind": "UpDownSystematic",
+            "what": "pt",
+            "varying_function": partial(muon_pt_scare, is_correction=False, unc_type="Resolution"),
         },
     },
     "energyErrShift": {
@@ -269,6 +285,14 @@ object_systematics = {
             ),
         },
     },
+    "MET_unclusteredEnergy": {
+        "object": "MET",
+        "args": {
+            "kind": "UpDownMultiSystematic",
+            "what": ["pt", "phi"],
+            "varying_function": MET_syst_Unclustered,
+        },
+    },
 }
 
 # functions correcting nominal object quantities to be placed here
@@ -314,6 +338,7 @@ weight_systematics = {
     "PreselSF": partial(PreselSF, is_correction=False),
     "TriggerSF": partial(TriggerSF, is_correction=False),
     "cTagSF": partial(cTagSF, is_correction=False),
+    "cTagSF_WPs": partial(cTagSF_WPs, is_correction=False),
     "deepJet_bTagShapeSF": partial(bTagShapeSF, ShapeSF_name="deepJet_shape", is_correction=False),
     "PNet_bTagShapeSF": partial(bTagShapeSF, ShapeSF_name="particleNet_shape", is_correction=False),
     "bTagFixedWP_PNetLoose": partial(bTagFixedWP, mva_name="particleNet", wp="L", is_correction=False),
@@ -341,6 +366,29 @@ weight_systematics = {
     "MuonIdMediumSF": partial(muonSFs, SF_name="NUM_MediumID_DEN_TrackerMuons", is_correction=False),
     "MuonIsoTightSF_IdMedium": partial(muonSFs, SF_name="NUM_TightPFIso_DEN_MediumID", is_correction=False),
     "MuonIsoLooseSF_IdMedium": partial(muonSFs, SF_name="NUM_LoosePFIso_DEN_MediumID", is_correction=False),
+    "ElectronIdSFWP90iso": partial(electronSFs, sf_key="wp90iso", is_correction=False),
+    "ElectronIdSFWP80iso": partial(electronSFs, sf_key="wp80iso", is_correction=False),
+    "ElectronIdSFLoose": partial(electronSFs, sf_key="Loose", is_correction=False),
+    "ElectronIdSFMedium": partial(electronSFs, sf_key="Medium", is_correction=False),
+    "ElectronIdSFTight": partial(electronSFs, sf_key="Tight", is_correction=False),
+    "ElectronRecoSF": partial(electronSFs, sf_key="Reco", is_correction=False),
+    "ElectronRecoSF_Zee_val": partial(electron_reco_sf_for_Zee_val_photons, is_correction=False),
+    # SF for analyses requiring at least one lepton which can be e or mu
+    # Choose combination of WPs for e and mu by name as in example below
+    "atLeast1LeptonSF_eleRecoWP90iso_muIDMediumIsoTight": partial(
+        atLeast1LeptonIdSF,
+        ele_SF_names=("Reco", "wp90iso"),
+        mu_SF_names=("NUM_MediumID_DEN_TrackerMuons", "NUM_TightPFIso_DEN_MediumID"),
+        is_correction=False,
+    ),
+    "Higgs_plus_b_pt20_syst50": partial(Higgs_plus_HF_syst, min_pt=20, flav="b", rel_unc=0.5),
+    "Higgs_plus_b_pt25_syst50": partial(Higgs_plus_HF_syst, min_pt=25, flav="b", rel_unc=0.5),
+    "Higgs_plus_b_pt20_syst100": partial(Higgs_plus_HF_syst, min_pt=20, flav="b", rel_unc=1.0),
+    "Higgs_plus_b_pt25_syst100": partial(Higgs_plus_HF_syst, min_pt=25, flav="b", rel_unc=1.0),
+    "Higgs_plus_c_pt20_syst50": partial(Higgs_plus_HF_syst, min_pt=20, flav="c", rel_unc=0.5),
+    "Higgs_plus_c_pt25_syst50": partial(Higgs_plus_HF_syst, min_pt=25, flav="c", rel_unc=0.5),
+    "Higgs_plus_c_pt20_syst100": partial(Higgs_plus_HF_syst, min_pt=20, flav="c", rel_unc=1.0),
+    "Higgs_plus_c_pt25_syst100": partial(Higgs_plus_HF_syst, min_pt=25, flav="c", rel_unc=1.0),
 }
 
 # functions correcting nominal event weights to be placed here
@@ -353,6 +401,7 @@ weight_corrections = {
     "PreselSF": partial(PreselSF, is_correction=True),
     "TriggerSF": partial(TriggerSF, is_correction=True),
     "cTagSF": partial(cTagSF, is_correction=True),
+    "cTagSF_WPs": partial(cTagSF_WPs, is_correction=True),
     "deepJet_bTagShapeSF": partial(bTagShapeSF, ShapeSF_name="deepJet_shape", is_correction=True),
     "PNet_bTagShapeSF": partial(bTagShapeSF, ShapeSF_name="particleNet_shape", is_correction=True),
     "bTagFixedWP_PNetLoose": partial(bTagFixedWP, mva_name="particleNet", wp="L", is_correction=True),
@@ -371,9 +420,26 @@ weight_corrections = {
     "bTagFixedWP_robustParticleTransformerExtraTight": partial(bTagFixedWP, mva_name="robustParticleTransformer", wp="XT", is_correction=True),
     "bTagFixedWP_robustParticleTransformerExtraExtraTight": partial(bTagFixedWP, mva_name="robustParticleTransformer", wp="XXT", is_correction=True),
     "ParT_bTagShapeSF": partial(bTagShapeSF, ShapeSF_name="robustParticleTransformer_shape", is_correction=True),
-    "NNLOPS": partial(NNLOPS, is_correction=True),
+    "NNLOPS": partial(NNLOPS, is_correction=True),  # backwards compatible
+    "NNLOPS_amcatnlo": partial(NNLOPS, generator="mcatnlo", is_correction=True),
+    "NNLOPS_powheg": partial(NNLOPS, generator="powheg", is_correction=True),
     "Zpt": partial(Zpt, is_correction=True),
     "MuonIdMediumSF": partial(muonSFs, SF_name="NUM_MediumID_DEN_TrackerMuons", is_correction=True),
     "MuonIsoTightSF_IdMedium": partial(muonSFs, SF_name="NUM_TightPFIso_DEN_MediumID", is_correction=True),
     "MuonIsoLooseSF_IdMedium": partial(muonSFs, SF_name="NUM_LoosePFIso_DEN_MediumID", is_correction=True),
+    "ElectronIdSFWP90iso": partial(electronSFs, sf_key="wp90iso", is_correction=True),
+    "ElectronIdSFWP80iso": partial(electronSFs, sf_key="wp80iso", is_correction=True),
+    "ElectronIdSFLoose": partial(electronSFs, sf_key="Loose", is_correction=True),
+    "ElectronIdSFMedium": partial(electronSFs, sf_key="Medium", is_correction=True),
+    "ElectronIdSFTight": partial(electronSFs, sf_key="Tight", is_correction=True),
+    "ElectronRecoSF": partial(electronSFs, sf_key="Reco", is_correction=True),
+    "ElectronRecoSF_Zee_val": partial(electron_reco_sf_for_Zee_val_photons, is_correction=True),
+    # SF for analyses requiring at least one lepton which can be e or mu
+    # Choose combination of WPs for e and mu by name as in example below
+    "atLeast1LeptonSF_eleRecoWP90iso_muIDMediumIsoTight": partial(
+        atLeast1LeptonIdSF,
+        ele_SF_names=("Reco", "wp90iso"),
+        mu_SF_names=("NUM_MediumID_DEN_TrackerMuons", "NUM_TightPFIso_DEN_MediumID"),
+        is_correction=True,
+    ),
 }

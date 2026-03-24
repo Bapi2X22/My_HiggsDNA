@@ -1,23 +1,66 @@
 {
     "2022preEE" : {
+        "PNetXXTight": 0.961,
+        "PNetXTight": 0.7862,
         "PNetTight": 0.6734,
         "PNetMedium": 0.245,
         "PNetLoose": 0.047
     },
     "2022postEE" : {
+        "PNetXXTight": 0.9664,
+        "PNetXTight": 0.8033,
         "PNetTight": 0.6915,
         "PNetMedium": 0.2605,
         "PNetLoose": 0.0499
     },
     "2023preBPix" : {
-	"PNetTight": 0.6172,
+        "PNetXXTight": 0.9659,
+        "PNetXTight": 0.7515,
+        "PNetTight": 0.6172,
         "PNetMedium": 0.1917,
         "PNetLoose": 0.0358
     },
     "2023postBPix" : {
+        "PNetXXTight": 0.9688,
+        "PNetXTight": 0.7544,
         "PNetTight": 0.6133,
         "PNetMedium": 0.1919,
         "PNetLoose": 0.0359
+    },
+    "2024" : {
+        "UParTXXTight": 0.9739,
+        "UParTXTight": 0.6298,
+        "UParTTight": 0.4648,
+        "UParTMedium": 0.1272,
+        "UParTLoose": 0.0246
+    },
+    "2018" : {
+        "UParTXXTight": 0.9739,
+        "UParTXTight": 0.6298,
+        "UParTTight": 0.4648,
+        "UParTMedium": 0.1272,
+        "UParTLoose": 0.0246
+    },
+    "2017" : {
+        "UParTXXTight": 0.9739,
+        "UParTXTight": 0.6298,
+        "UParTTight": 0.4648,
+        "UParTMedium": 0.1272,
+        "UParTLoose": 0.0246
+    },
+    "2016preVFP" : {
+        "UParTXXTight": 0.9739,
+        "UParTXTight": 0.6298,
+        "UParTTight": 0.4648,
+        "UParTMedium": 0.1272,
+        "UParTLoose": 0.0246
+    },
+    "2016postVFP" : {
+        "UParTXXTight": 0.9739,
+        "UParTXTight": 0.6298,
+        "UParTTight": 0.4648,
+        "UParTMedium": 0.1272,
+        "UParTLoose": 0.0246
     }
 }
 

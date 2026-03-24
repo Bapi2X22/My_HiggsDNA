@@ -4,7 +4,6 @@ import numpy as np
 import awkward as ak
 import correctionlib
 import os
-from copy import deepcopy
 from coffea.lookup_tools.doublecrystalball import doublecrystalball
 import logging
 
@@ -22,12 +21,34 @@ def get_rndm(eta, nL, cset):
 
     # get random number following the CB
     # we need reproducible random numbers since in the systematics call, the previous correction needs to be cancelled out
-    rng = np.random.default_rng(seed=125)
+    if len(eta) > 0:
+        seed = abs(np.float32(eta[0]).view("int32"))
+    else:
+        seed = 42
+    rng = np.random.default_rng(seed=seed)
     rndm_f = rng.random(len(eta))
 
-    dcb_f = doublecrystalball(alpha_f, alpha_f, n_f, n_f, mean_f, sigma_f)
-
-    return dcb_f.ppf(rndm_f)
+    # Avoid SciPy/coffea warnings by not constructing DSCB with invalid parameters.
+    # Valid if: sigma>0, alpha>0, n>1 (all finite). We only evaluate PPF on valid entries.
+    valid = (
+        np.isfinite(sigma_f) & (sigma_f > 0)
+        & np.isfinite(alpha_f) & (alpha_f > 0)
+        & np.isfinite(n_f) & (n_f > 1.001)
+        & np.isfinite(mean_f)
+    )
+    # Build output as NumPy for safe masked assignment, then wrap back to Awkward
+    out_np = np.zeros(len(rndm_f), dtype=float)
+    valid_np = ak.to_numpy(valid)
+    if np.any(valid_np):
+        # Convert valid slices to NumPy to satisfy coffea's doublecrystalball
+        a = ak.to_numpy(alpha_f[valid])
+        n = ak.to_numpy(n_f[valid])
+        m = ak.to_numpy(mean_f[valid])
+        s = ak.to_numpy(sigma_f[valid])
+        dcb_ok = doublecrystalball(a, a, n, n, m, s)
+        out_valid = dcb_ok.ppf(rndm_f[valid_np])
+        out_np[valid_np] = out_valid
+    return ak.Array(out_np)
 
 
 def get_std(pt, eta, nL, cset):
@@ -45,33 +66,30 @@ def get_std(pt, eta, nL, cset):
 
 
 def get_k(eta, var, cset):
-    # obtain parameters from correctionlib
+    # obtain parameters from correctionlib (once)
     k_data_f = cset.get("k_data").evaluate(abs(eta), var)
     k_mc_f = cset.get("k_mc").evaluate(abs(eta), var)
 
-    # obtain parameters from correctionlib
-    k_data_f = cset.get("k_data").evaluate(abs(eta), var)
-    k_mc_f = cset.get("k_mc").evaluate(abs(eta), var)
-
-    # calculate residual smearing factor
-    # return 0 if smearing in MC already larger than in data
-    k_f = ak.where(k_mc_f < k_data_f, (k_data_f**2 - k_mc_f**2) ** 0.5, 0)
+    # NOTE: Avoid RuntimeWarning in sqrt by clamping the argument to >= 0 before sqrt
+    delta = k_data_f**2 - k_mc_f**2
+    delta = ak.where(delta > 0, delta, 0)
+    k_f = ak.where(k_mc_f < k_data_f, np.sqrt(delta), 0)
 
     return k_f
 
 
-def filter_boundaries(pt_corr, pt):
-    # Check for pt values outside the range of [26, 200]
-    outside_bounds = (pt < 26) | (pt > 200)
+def filter_boundaries(pt_corr, pt, low_pt_threshold=26):
+    # Check for pt values outside the range of [low_pt_threshold, 200]
+    outside_bounds = (pt < low_pt_threshold) | (pt > 200)
 
     n_pt_outside = ak.sum(outside_bounds)
 
     if n_pt_outside > 0:
         logger.debug(
-            f"[ Muon S&S ] There are {n_pt_outside} events with muon pt outside of [26,200] GeV. Setting those entries to their initial value."
+            f"[ Muon S&S ] There are {n_pt_outside} events with muon pt outside of [{low_pt_threshold},200] GeV. Setting those entries to their initial value."
         )
         pt_corr = ak.where(pt > 200, pt, pt_corr)
-        pt_corr = ak.where(pt < 26, pt, pt_corr)
+        pt_corr = ak.where(pt < low_pt_threshold, pt, pt_corr)
 
     # Check for NaN entries in pt_corr
     nan_entries = np.isnan(pt_corr)
@@ -107,6 +125,11 @@ def pt_resol(pt, eta, nL, cset):
     pt_corr = pt * (1 + k * std * rndm)
 
     pt_corr = filter_boundaries(pt_corr, pt)
+
+    # MUO POG style guard: revert extreme smearing to original pt
+    ratio = pt_corr / pt
+    mask_extreme = (ratio > 2.0) | (ratio < 0.1) | (pt_corr < 0)
+    pt_corr = ak.where(mask_extreme, pt, pt_corr)
 
     return pt_corr
 
@@ -150,6 +173,11 @@ def pt_resol_var(pt_woresol, pt_wresol, eta, updn, cset):
         )
     else:
         logger.info("[ Muon Scale ] ERROR: updn must be 'up' or 'dn'")
+
+    # MUO POG-style guardrail also for variations
+    ratio_var = pt_var_f / pt_woresol_f
+    mask_extreme_var = (ratio_var > 2.0) | (ratio_var < 0.1) | (pt_var_f < 0)
+    pt_var_f = ak.where(mask_extreme_var, pt_woresol_f, pt_var_f)
 
     return pt_var_f
 
@@ -234,7 +262,7 @@ def muon_pt_scare(pt, events, year="2022postEE", unc_type=None, is_correction=Tr
     # decide if the process data
     is_data = False if hasattr(events, "genWeight") else True
 
-    muons_jagged = deepcopy(events.Muon)
+    muons_jagged = events.Muon
     muons = ak.flatten(muons_jagged)
 
     if year == "2022preEE":
@@ -253,9 +281,13 @@ def muon_pt_scare(pt, events, year="2022postEE", unc_type=None, is_correction=Tr
         path_json = os.path.join(
             os.path.dirname(__file__), "JSONs/MuonScaRe/2023_Summer23BPix.json"
         )
+    elif year == "2024":
+        path_json = os.path.join(
+            os.path.dirname(__file__), "JSONs/MuonScaRe/2024.json"
+        )
     else:
         logger.info(
-            'WARNING: there are only scale corrections for the year strings ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]! \n Exiting. \n'
+            'WARNING: there are only scale corrections for the year strings ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]! \n Exiting. \n'
         )
         exit()
 
@@ -281,7 +313,7 @@ def muon_pt_scare(pt, events, year="2022postEE", unc_type=None, is_correction=Tr
             logger.debug("[ Muon Scale ] Data only need muon pt scale correction")
             muons["pt"] = muons["pt_scalecorr"]
             muons_jagged = ak.unflatten(muons, counts)
-            events.Muon = muons_jagged
+            events["Muon"] = muons_jagged
             return events
         else:
             # * MC needs both scale and resolution corrections
@@ -296,7 +328,7 @@ def muon_pt_scare(pt, events, year="2022postEE", unc_type=None, is_correction=Tr
 
             muons["pt"] = muons["pt_scarecorr"]
             muons_jagged = ak.unflatten(muons, counts)
-            events.Muon = muons_jagged
+            events["Muon"] = muons_jagged
             return events
     else:
         if not hasattr(events, "genWeight"):

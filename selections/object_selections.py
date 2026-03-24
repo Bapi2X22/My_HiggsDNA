@@ -1,5 +1,6 @@
 import awkward as ak
 import numpy as np
+from coffea.nanoevents.methods import vector
 
 
 def delta_r_mask(
@@ -18,6 +19,7 @@ def delta_r_mask(
     :return: boolean array of objects in objects1 which pass delta_R requirement
     :rtype: coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate
     """
+
     mval = first.metric_table(second)
     return ak.all(mval > threshold, axis=-1)
 

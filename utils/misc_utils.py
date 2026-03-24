@@ -75,6 +75,22 @@ def add_pnet_prob(
     return jets
 
 
+def evaluate_ctag_wp(ctag_wps, nth_jet_pn_b_plus_c, nth_jet_pn_b_vs_c):
+    """ParticleNetAK4 -- exclusive b- and c-tagging categories
+    5x: b-tagged; 4x: c-tagged; 0: light
+    """
+    wp = ak.zeros_like(nth_jet_pn_b_plus_c)
+    for wp_cfg in ctag_wps:
+        wp_ids = ak.ones_like(nth_jet_pn_b_plus_c) * wp_cfg[0]
+        wp = ak.where(
+            (wp_cfg[1][0] < nth_jet_pn_b_plus_c) & (nth_jet_pn_b_plus_c <= wp_cfg[1][1]) & (wp_cfg[2][0] < nth_jet_pn_b_vs_c) & (nth_jet_pn_b_vs_c <= wp_cfg[2][1]),
+            wp_ids,
+            wp
+        )
+
+    return wp
+
+
 @numba.vectorize(
     [
         numba.float32(numba.float32, numba.float32),
@@ -191,6 +207,7 @@ def DPhiV1V2(vec1, vec2):
     valid = (dot >= -1.0) & (dot <= 1.0)
 
     # Compute acos only for valid entries
-    dphi = ak.where(valid, np.arccos(dot) * diff_sign * cross_sign, -999.0)
+    with np.errstate(over='ignore', invalid='ignore'):
+        dphi = ak.where(valid, np.arccos(dot) * diff_sign * cross_sign, -999.0)
 
     return dphi

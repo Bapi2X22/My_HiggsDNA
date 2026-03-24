@@ -193,6 +193,8 @@ def select_jets(
     electrons: ak.highlevel.Array,
     taus: ak.highlevel.Array = None,
 ) -> ak.highlevel.Array:
+    
+    print("Printing jet fields for debugging: ", jets.fields)
     # jet id selection:
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetID13p6TeV#nanoAOD_Flags
     if (self.nano_version == 12) or (self.nano_version == 13):
@@ -249,6 +251,7 @@ def select_jets(
                 "charge": diphotons.pho_sublead.charge,
             }
         )
+        jets = ak.with_name(jets, "PtEtaPhiMCandidate")
         sublead = ak.with_name(sublead, "PtEtaPhiMCandidate")
         dr_pho_lead_cut = delta_r_mask(jets, lead, self.jet_pho_min_dr)
         dr_pho_sublead_cut = delta_r_mask(jets, sublead, self.jet_pho_min_dr)
@@ -257,17 +260,20 @@ def select_jets(
         dr_pho_sublead_cut = jets.pt > -1
 
     if (self.clean_jet_ele) & (ak.num(electrons.pt, axis=0) > 0):
+        jets = ak.with_name(jets, "PtEtaPhiMCandidate")
         dr_electrons_cut = delta_r_mask(jets, electrons, self.jet_ele_min_dr)
     else:
         dr_electrons_cut = jets.pt > -1
 
     if (self.clean_jet_muo) & (ak.num(muons.pt, axis=0) > 0):
+        jets = ak.with_name(jets, "PtEtaPhiMCandidate")
         dr_muons_cut = delta_r_mask(jets, muons, self.jet_muo_min_dr)
     else:
         dr_muons_cut = jets.pt > -1
 
     if taus is not None:
         if (self.clean_jet_tau) & (ak.num(taus.pt, axis=0) > 0):
+            jets = ak.with_name(jets, "PtEtaPhiMCandidate")
             dr_taus_cut = delta_r_mask(jets, taus, self.jet_tau_min_dr)
         else:
             dr_taus_cut = jets.pt > -1
@@ -352,26 +358,36 @@ def select_jets_eta_dependent(
         dr_dipho_cut = delta_r_mask(jets, diphotons, self.jet_dipho_min_dr)
 
     if (self.clean_jet_pho) & (ak.num(diphotons.pt, axis=0) > 0):
-        lead = ak.zip(
-            {
-                "pt": diphotons.pho_lead.pt,
-                "eta": diphotons.pho_lead.eta,
-                "phi": diphotons.pho_lead.phi,
-                "mass": diphotons.pho_lead.mass,
-                "charge": diphotons.pho_lead.charge,
-            }
+        # lead = ak.zip(
+        #     {
+        #         "pt": diphotons.pho_lead.pt,
+        #         "eta": diphotons.pho_lead.eta,
+        #         "phi": diphotons.pho_lead.phi,
+        #         "mass": diphotons.pho_lead.mass,
+        #         "charge": diphotons.pho_lead.charge,
+        #     }
+        # )
+        # lead = ak.with_name(lead, "PtEtaPhiMCandidate")
+        # sublead = ak.zip(
+        #     {
+        #         "pt": diphotons.pho_sublead.pt,
+        #         "eta": diphotons.pho_sublead.eta,
+        #         "phi": diphotons.pho_sublead.phi,
+        #         "mass": diphotons.pho_sublead.mass,
+        #         "charge": diphotons.pho_sublead.charge,
+        #     }
+        # )
+        # sublead = ak.with_name(sublead, "PtEtaPhiMCandidate")
+        lead = ak.with_name(
+            diphotons.pho_lead,
+            "PtEtaPhiMCandidate",
+            behavior=vector.behavior,
         )
-        lead = ak.with_name(lead, "PtEtaPhiMCandidate")
-        sublead = ak.zip(
-            {
-                "pt": diphotons.pho_sublead.pt,
-                "eta": diphotons.pho_sublead.eta,
-                "phi": diphotons.pho_sublead.phi,
-                "mass": diphotons.pho_sublead.mass,
-                "charge": diphotons.pho_sublead.charge,
-            }
+        sublead = ak.with_name(
+            diphotons.pho_sublead,
+            "PtEtaPhiMCandidate",
+            behavior=vector.behavior,
         )
-        sublead = ak.with_name(sublead, "PtEtaPhiMCandidate")
         dr_pho_lead_cut = delta_r_mask(jets, lead, self.jet_pho_min_dr)
         dr_pho_sublead_cut = delta_r_mask(jets, sublead, self.jet_pho_min_dr)
     else:

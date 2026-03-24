@@ -5,6 +5,7 @@ from higgs_dna.tools.EELeak_region import veto_EEleak_flag
 from higgs_dna.tools.EcalBadCalibCrystal_events import remove_EcalBadCalibCrystal_events
 from higgs_dna.tools.gen_helpers import get_fiducial_flag
 from higgs_dna.tools.sigma_m_tools import compute_sigma_m
+from higgs_dna.tools.jetID import add_jetId
 from higgs_dna.selections.photon_selections import photon_preselection
 from higgs_dna.selections.diphoton_selections import build_diphoton_candidates, apply_fiducial_cut_det_level
 from higgs_dna.selections.lepton_selections import select_electrons, select_muons
@@ -36,7 +37,6 @@ import numpy
 import sys
 import vector
 from coffea.analysis_tools import Weights
-from copy import deepcopy
 
 import logging
 
@@ -56,7 +56,6 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
         taggers: Optional[List[Any]] = None,
         nano_version: int = None,
         bTagEffFileName: Optional[str] = None,
-        # trigger_group: str = ".*DoubleEG.*",
         trigger_group: str = ".*DoubleEG.*",
         analysis: str = "mainAnalysis",
         applyCQR: bool = False,
@@ -111,7 +110,7 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
                 histos_etc[dataset_name]["nPos"] - histos_etc[dataset_name]["nNeg"]
             )
             histos_etc[dataset_name]["genWeightSum"] = float(
-                ak.sum(events.genWeight)
+                numpy.sum(events.genWeight.to_numpy())
             )
         else:
             histos_etc[dataset_name]["nTot"] = int(len(events))
@@ -134,7 +133,7 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
 
         if self.data_kind == "mc":
             # Add sum of gen weights before selection for normalisation in postprocessing
-            metadata["sum_genw_presel"] = str(ak.sum(events.genWeight))
+            metadata["sum_genw_presel"] = str(numpy.sum(events.genWeight.to_numpy()))
         else:
             metadata["sum_genw_presel"] = "Data"
 
@@ -145,8 +144,12 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
         if self.data_kind == "data":
             events = remove_EcalBadCalibCrystal_events(events)
 
+        # add zero photon mass and charge
+        # TODO: remove this temporary fix when https://github.com/scikit-hep/vector/issues/498 is resolved
+        events["Photon"] = self.add_zero_photon_mass_and_charge(events.Photon)
+
         # we need ScEta for corrections and systematics, it is present in NanoAODv13+ and can be calculated using PV for older versions
-        events.Photon = add_photon_SC_eta(events.Photon, events.PV)
+        events["Photon"] = add_photon_SC_eta(events.Photon, events.PV)
 
         if self.validate_with_electrons:
             # select photons with an associated electron and a pixel seed
@@ -159,7 +162,7 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
             self.year[dataset_name][0] == "2022EE"
             or self.year[dataset_name][0] == "2022postEE"
         ):
-            events.Photon = veto_EEleak_flag(self, events.Photon)
+            events["Photon"] = veto_EEleak_flag(self, events.Photon)
 
         # read which systematics and corrections to process
         try:
@@ -193,9 +196,9 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
                 else:
                     s_or_s_applied = True
         if s_or_s_applied:
-            events.Photon = ak.with_field(events.Photon, ak.copy(events.Photon.pt), "pt_raw")
+            events["Photon"] = ak.with_field(events.Photon, events.Photon.pt, "pt_raw")
         if s_or_s_ele_applied:
-            events.Electron = ak.with_field(events.Electron, ak.copy(events.Electron.pt), "pt_raw")
+            events["Electron"] = ak.with_field(events.Electron, events.Electron.pt, "pt_raw")
 
         # Since now we are applying Smearing term to the sigma_m_over_m i added this portion of code
         # specially for the estimation of smearing terms for the data events [data pt/energy] are not smeared!
@@ -281,11 +284,7 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
         logger.debug(original_photons.systematics.fields)
         for systematic in original_photons.systematics.fields:
             for variation in original_photons.systematics[systematic].fields:
-                # deepcopy to allow for independent calculations on photon variables with CQR
-                photons_dct[f"{systematic}_{variation}"] = deepcopy(
-                    original_photons.systematics[systematic][variation]
-                )
-
+                photons_dct[f"{systematic}_{variation}"] = original_photons.systematics[systematic][variation]
         # NOTE: jet jerc systematics are added in the corrections, now extract those variations and create the dictionary
         jerc_syst_list, jets_dct = get_obj_syst_dict(original_jets, ["pt", "mass"])
         # object systematics dictionary
@@ -352,12 +351,12 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
                     "phi": jets.phi,
                     "mass": jets.mass,
                     "charge": ak.zeros_like(jets.pt),
-                    "jetId": jets.jetId,
+                    "jetId": add_jetId(jets, self.nano_version, self.year[dataset_name][0], flattenUnflatten=True),  # add jet ID based on nano version
                     **(
                         {"neHEF": jets.neHEF, "neEmEF": jets.neEmEF, "chEmEF": jets.chEmEF, "muEF": jets.muEF} if self.nano_version == 12 else {}
                     ),
                     **(
-                        {"neHEF": jets.neHEF, "neEmEF": jets.neEmEF, "chMultiplicity": jets.chMultiplicity, "neMultiplicity": jets.neMultiplicity, "chEmEF": jets.chEmEF, "chHEF": jets.chHEF, "muEF": jets.muEF} if self.nano_version == 13 else {}
+                        {"neHEF": jets.neHEF, "neEmEF": jets.neEmEF, "chMultiplicity": jets.chMultiplicity, "neMultiplicity": jets.neMultiplicity, "chEmEF": jets.chEmEF, "chHEF": jets.chHEF, "muEF": jets.muEF} if self.nano_version >= 13 else {}
                     ),
                 }
             )
@@ -440,12 +439,13 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
             diphotons["n_jets"] = n_jets
             diphotons["NJ"] = Njets2p5
 
-            first_jet_pz = first_jet_pt * numpy.sinh(first_jet_eta)
-            first_jet_energy = numpy.sqrt((first_jet_pt**2 * numpy.cosh(first_jet_eta)**2) + first_jet_mass**2)
+            with numpy.errstate(over='ignore', invalid='ignore'):
+                first_jet_pz = first_jet_pt * numpy.sinh(first_jet_eta)
+                first_jet_energy = numpy.sqrt((first_jet_pt**2 * numpy.cosh(first_jet_eta)**2) + first_jet_mass**2)
 
-            first_jet_y = 0.5 * numpy.log((first_jet_energy + first_jet_pz) / (first_jet_energy - first_jet_pz))
-            first_jet_y = ak.fill_none(first_jet_y, -999)
-            first_jet_y = ak.where(numpy.isnan(first_jet_y), -999, first_jet_y)
+                first_jet_y = 0.5 * numpy.log((first_jet_energy + first_jet_pz) / (first_jet_energy - first_jet_pz))
+                first_jet_y = ak.fill_none(first_jet_y, -999)
+                first_jet_y = ak.where(numpy.isnan(first_jet_y), -999, first_jet_y)
             diphotons["YJ0"] = first_jet_y
 
             # run taggers on the events list with added diphotons
@@ -483,8 +483,8 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
 
                 # lowest priority is most important (ascending sort)
                 # leave in order of diphoton pT in case of ties (stable sort)
-                sorted = ak.argsort(diphotons.best_tag, stable=True)
-                diphotons = diphotons[sorted]
+                sorted_gg = ak.argsort(diphotons.best_tag, stable=True)
+                diphotons = diphotons[sorted_gg]
 
             diphotons = ak.firsts(diphotons)
             # set diphotons as part of the event record
@@ -496,6 +496,9 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
             # nPV just for validation of pileup reweighting
             diphotons["nPV"] = events.PV.npvs
             diphotons["fixedGridRhoAll"] = events.Rho.fixedGridRhoAll
+            # Beamspot variables
+            diphotons["BeamSpot_sigmaZ"] = events.BeamSpot.sigmaZ
+            diphotons["BeamSpot_sigmaZError"] = events.BeamSpot.sigmaZError
             # annotate diphotons with dZ information (difference between z position of GenVtx and PV) as required by flashggfinalfits
             if self.data_kind == "mc":
                 diphotons["genWeight"] = events.genWeight
@@ -518,8 +521,7 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
 
             # return if there is no surviving events
             if len(diphotons) == 0:
-                logger.info("No surviving events in this run, return now!")
-                return histos_etc
+                logger.info("No surviving events in this run!")
             if self.data_kind == "mc":
                 # initiate Weight container here, after selection, since event selection cannot easily be applied to weight container afterwards
                 event_weights = Weights(size=len(events[selection_mask]),storeIndividual=True)
@@ -661,10 +663,9 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
                             if "lead_fixedGridRhoAll" not in field
                         ]
                     ]
-
                 fname = (
-                    events.behavior[
-                        "__events_factory__"
+                    events.attrs[
+                        "@events_factory"
                     ]._partition_key.replace("/", "_")
                     + ".%s" % self.output_format
                 )
@@ -684,3 +685,4 @@ class HggBaseProcessor(HggSkeletonProcessor):  # type: ignore
 
     def postprocess(self, accumulant: Dict[Any, Any]) -> Any:
         pass
+

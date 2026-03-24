@@ -144,12 +144,36 @@
                 "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL*"
             ]
         },
-        ".*SingleEle.*" :
+        ".*SingleEle.*":
         {
-	    "tagAndProbe" :
+            "tagAndProbe":
             [
-		"HLT_Ele30_WPTight_Gsf"
-	    ]
+            "HLT_Ele30_WPTight_Gsf*"
+            ],
+            "mainAnalysis":
+            [
+            "HLT_Ele30_WPTight_Gsf*"
+            ]
+        },
+
+        ".*SingleMuon.*":
+        {
+            "mainAnalysis":
+            [
+            "HLT_IsoMu24*"
+            ]
+        },
+        ".*EGamma.*":
+        {
+            "tagAndProbe":
+            [
+            "HLT_Ele30_WPTight_Gsf*"
+            ],
+            "mainAnalysis":
+            [
+            "HLT_Ele30_WPTight_Gsf*",
+            "HLT_IsoMu24*"
+            ]
         },
         ".*DoubleMuon.*" :
         {

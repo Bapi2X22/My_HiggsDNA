@@ -104,6 +104,9 @@ def delta_r_manual(obj1, obj2):
 
 def photon_preselections(self,
     photons: ak.Array,
+    jets: ak.Array,
+    electrons: ak.Array,
+    muons: ak.Array,
     events: ak.Array,
     electron_veto=True,
     revert_electron_veto=False,
@@ -129,12 +132,12 @@ def photon_preselections(self,
         ele_pt_cut, mu_pt_cut = 33, 26
     elif year == "2024":
         # ele_pt_cut, mu_pt_cut = 33, 26
-        ele_pt_cut, mu_pt_cut = 33, 26
+        ele_pt_cut, mu_pt_cut = 30, 24
 
     else:
         raise ValueError(f"Unknown year {year}")
 
-    electrons = events.Electron
+    # electrons = events.Electron
 
     good_electrons = (
         (electrons.pt > ele_pt_cut) &
@@ -145,19 +148,19 @@ def photon_preselections(self,
     )
 
     good_muons = (
-        (events.Muon.pt > mu_pt_cut)
-        & (np.abs(events.Muon.eta) < 2.4)
-        & (events.Muon.pfRelIso03_all < 0.15)
+        (muons.pt > mu_pt_cut)
+        & (np.abs(muons.eta) < 2.4)
+        & (muons.pfRelIso03_all < 0.15)
     )
 
-    one_ele = ak.num(events.Electron[good_electrons]) == 1
-    one_mu = ak.num(events.Muon[good_muons]) == 1
+    one_ele = ak.num(electrons[good_electrons]) == 1
+    one_mu = ak.num(muons[good_muons]) == 1
     lepton_channel_mask = one_ele | one_mu
     # lepton_channel_mask = one_mu
 
-    selected_electrons = events.Electron[good_electrons]
+    selected_electrons = electrons[good_electrons]
     print("selected_electrons", len(selected_electrons[ak.num(selected_electrons.pt)>0]))
-    selected_muons = events.Muon[good_muons]
+    selected_muons = muons[good_muons]
     print("selected_muons", len(selected_muons[ak.num(selected_muons.pt)>0]))
     selected_leptons = ak.concatenate([selected_electrons, selected_muons], axis=1)
     print("selected_leptons", len(selected_leptons[ak.num(selected_leptons.pt)>0]))
@@ -168,13 +171,14 @@ def photon_preselections(self,
     # Jet selection
     # ------------------------
     good_jets = (
-        (events.Jet.pt > 20)
-        & (np.abs(events.Jet.eta) < 2.4)
-        & (events.Jet.btagDeepFlavB > wp_medium)
+        (jets.pt > 20)
+        & (np.abs(jets.eta) < 2.4)
+        & (jets.btagUParTAK4B > 0.1272)
     )
-    selected_bjets = events.Jet[good_jets] 
+    selected_bjets = jets[good_jets] 
     print("selected_b_jets: ", selected_bjets)
     at_least_two_bjets = ak.num(selected_bjets) >= 2
+    # at_least_one_bjets = ak.num(selected_bjets) >= 1
 
     # keep top 2 by DeepJet score
     # top2_bjets = selected_jets[ak.argsort(selected_jets.btagDeepFlavB, ascending=False)][:, :2]
@@ -193,12 +197,12 @@ def photon_preselections(self,
     is_endcap = (abs_eta > 1.566) & (abs_eta < 2.5)
 
     # Apply region-specific MVA thresholds
-    barrel_cut = is_barrel & (photons.mvaID > -0.02)
-    endcap_cut = is_endcap & (photons.mvaID > -0.26)
+    barrel_cut = is_barrel & (photons.mvaID > 0.0439603)
+    endcap_cut = is_endcap & (photons.mvaID > -0.249526)
 
     # Combine everything
     good_photons = (
-        (photons.pt > 10)
+        (photons.pt > 15)
         & valid_eta
         & (barrel_cut | endcap_cut)
         & (~photons.pixelSeed)
@@ -216,6 +220,7 @@ def photon_preselections(self,
     dr_muons = delta_r_manual(selected_muons, selected_photons)
 
 
+    # event_mask = lepton_channel_mask & at_least_one_bjets & at_least_two_photons & dr_mask
     event_mask = lepton_channel_mask & at_least_two_bjets & at_least_two_photons & dr_mask
 
     # ------------------------
@@ -229,4 +234,4 @@ def photon_preselections(self,
     filtered_jets = ak.where(event_mask, selected_bjets, empty_bjets)
     filtered_leptons = ak.where(event_mask, selected_leptons, empty_leptons)
 
-    return filtered_photons, filtered_jets, filtered_leptons
+    return event_mask, filtered_photons, filtered_jets, filtered_leptons

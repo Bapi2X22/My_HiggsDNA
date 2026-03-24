@@ -3,7 +3,6 @@ import awkward as ak
 import correctionlib
 import os
 import sys
-from copy import deepcopy
 import logging
 from higgs_dna.systematics.EGM_SS_systematics import EGM_Scale_Trad, EGM_Smearing_Trad, EGM_Scale_IJazZ, EGM_Smearing_IJazZ
 
@@ -83,18 +82,17 @@ def FNUF(pt, events, year="2017", is_correction=True):
 
     # for later unflattening:
     counts = ak.num(events.Photon.pt)
-    eta = ak.flatten(events.Photon.ScEta)
+    eta = ak.flatten(abs(events.Photon.ScEta))
     r9 = ak.flatten(events.Photon.r9)
-    _energy = ak.flatten(events.Photon.energy)
     _pt = ak.flatten(events.Photon.pt)
 
     # era/year defined as parameter of the function
-    avail_years = ["2016", "2016preVFP", "2016postVFP", "2017", "2018", "2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+    avail_years = ["2016", "2016preVFP", "2016postVFP", "2017", "2018", "2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
     if year not in avail_years:
         logger.error(f"Only FNUF corrections for the year strings {avail_years} are already implemented! \n Exiting. \n")
         sys.exit(1)
-    elif "2022" or "2023" in year:
-        logger.warning(f"""You selected the year_string {year}, which is a 2022 era.
+    elif "2022" in year or "2023" in year or "2024" in year:
+        logger.warning(f"""You selected the year_string {year}, which is a Run 3 era.
                         FNUF was not re-derived for Run 3 yet, but we fall back to the Run 2 2018 values.
                         These values only constitute up/down variations, no correction is applied.
                         The values are the averaged corrections from Run 2, turned into a systematic and inflated by 25%.
@@ -109,15 +107,12 @@ def FNUF(pt, events, year="2017", is_correction=True):
 
     if is_correction:
         correction = evaluator.evaluate("nominal", eta, r9)
-        corr_energy = _energy * correction
         corr_pt = _pt * correction
 
-        corrected_photons = deepcopy(events.Photon)
-        corr_energy = ak.unflatten(corr_energy, counts)
+        corrected_photons = events.Photon
         corr_pt = ak.unflatten(corr_pt, counts)
-        corrected_photons["energy"] = corr_energy
         corrected_photons["pt"] = corr_pt
-        events.Photon = corrected_photons
+        events["Photon"] = corrected_photons
 
         return events
 
@@ -149,14 +144,13 @@ def ShowerShape(pt, events, year="2017", is_correction=True):
     counts = ak.num(events.Photon.pt)
     eta = ak.flatten(events.Photon.ScEta)
     r9 = ak.flatten(events.Photon.r9)
-    _energy = ak.flatten(events.Photon.energy)
     _pt = ak.flatten(events.Photon.pt)
 
     # era/year defined as parameter of the function
     avail_years = ["2016", "2016preVFP", "2016postVFP", "2017", "2018"]
     if year not in avail_years:
-        logger.error(f"Only ShowerShape corrections for the year strings {avail_years} are already implemented! \n Exiting. \n")
-        sys.exit(1)
+        logger.error(f"Only ShowerShape corrections for the year strings {avail_years} are already implemented! ShowerShape should not be used in run3 eras. \n Exiting. \n")
+        raise ValueError(f"Only ShowerShape corrections for the year strings {avail_years} are already implemented! ShowerShape should not be used in run3 eras. \n Exiting. \n")
     elif "2016" in year:
         year = "2016"
 
@@ -165,15 +159,12 @@ def ShowerShape(pt, events, year="2017", is_correction=True):
 
     if is_correction:
         correction = evaluator.evaluate("nominal", eta, r9)
-        corr_energy = _energy * correction
         corr_pt = _pt * correction
 
-        corrected_photons = deepcopy(events.Photon)
-        corr_energy = ak.unflatten(corr_energy, counts)
+        corrected_photons = events.Photon
         corr_pt = ak.unflatten(corr_pt, counts)
-        corrected_photons["energy"] = corr_energy
         corrected_photons["pt"] = corr_pt
-        events.Photon = corrected_photons
+        events["Photon"] = corrected_photons
 
         return events
 
@@ -203,18 +194,17 @@ def Material(pt, events, year="2017", is_correction=True):
     counts = ak.num(events.Photon.pt)
     eta = ak.flatten(abs(events.Photon.ScEta))
     r9 = ak.flatten(events.Photon.r9)
-    _energy = ak.flatten(events.Photon.energy)
     _pt = ak.flatten(events.Photon.pt)
 
     # era/year defined as parameter of the function, only 2017 is implemented up to now
-    avail_years = ["2016", "2016preVFP", "2016postVFP", "2017", "2018", "2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+    avail_years = ["2016", "2016preVFP", "2016postVFP", "2017", "2018", "2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
     if year not in avail_years:
         logger.error(f"Only eVetoSF corrections for the year strings {avail_years} are already implemented! \n Exiting. \n")
         sys.exit(1)
     elif "2016" in year:
         year = "2016"
     # use Run 2 files also for Run 3, preliminary
-    elif year in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
+    elif year in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]:
         logger.warning(f"""You selected the year_string {year}, which is a Run 3 era.
                   Material was not rederived for Run 3 yet, but we fall back to the Run 2 2018 values.
                   Please make sure that this is what you want. You have been warned.""")
@@ -225,15 +215,12 @@ def Material(pt, events, year="2017", is_correction=True):
 
     if is_correction:
         correction = evaluator.evaluate("nominal", eta, r9)
-        corr_energy = _energy * correction
         corr_pt = _pt * correction
 
-        corrected_photons = deepcopy(events.Photon)
-        corr_energy = ak.unflatten(corr_energy, counts)
+        corrected_photons = events.Photon
         corr_pt = ak.unflatten(corr_pt, counts)
-        corrected_photons["energy"] = corr_energy
         corrected_photons["pt"] = corr_pt
-        events.Photon = corrected_photons
+        events["Photon"] = corrected_photons
 
         return events
 

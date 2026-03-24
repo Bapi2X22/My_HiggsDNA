@@ -16,6 +16,12 @@ from higgs_dna.workflows.My_first_processor_beta import My_first_processor_beta
 from higgs_dna.workflows.HtoBBGG_bkg import HtoBBGG_bkg
 from higgs_dna.workflows.HtoBBGG_ggH import HtoBBGG_ggH
 from higgs_dna.workflows.HtoBBGG_ggH_with_cat import HtoBBGG_ggH_with_cat
+from higgs_dna.workflows.My_first_processor_2024_WH_cat1 import My_first_processor_2024_WH_cat1
+from higgs_dna.workflows.My_first_processor_WH_Cat1 import My_first_processor_WH_Cat1
+from higgs_dna.workflows.My_first_processor_WH_Cat1_HDNA_presel import My_first_processor_WH_Cat1_HDNA_presel
+from higgs_dna.workflows.HtoAAtobbgg_BKG_2024 import HtoAAtobbgg_BKG_2024
+from higgs_dna.workflows.HtoAAtobbgg_BKG_2024_without_presel import HtoAAtobbgg_BKG_2024_without_presel
+
 
 from higgs_dna.workflows.taggers import taggers
 
@@ -41,5 +47,11 @@ workflows["My_first_processor_beta"] = My_first_processor_beta
 workflows["HtoBBGG_bkg"] = HtoBBGG_bkg
 workflows["HtoBBGG_ggH"] = HtoBBGG_ggH
 workflows["HtoBBGG_ggH_with_cat"] = HtoBBGG_ggH_with_cat
+workflows["My_first_processor_2024_WH_cat1"] = My_first_processor_2024_WH_cat1
+workflows["My_first_processor_WH_Cat1"] = My_first_processor_WH_Cat1
+workflows["My_first_processor_WH_Cat1_HDNA_presel"] = My_first_processor_WH_Cat1_HDNA_presel
+workflows["HtoAAtobbgg_BKG_2024"] = HtoAAtobbgg_BKG_2024
+workflows["HtoAAtobbgg_BKG_2024_without_presel"] = HtoAAtobbgg_BKG_2024_without_presel
+
 
 __all__ = ["workflows", "taggers"]

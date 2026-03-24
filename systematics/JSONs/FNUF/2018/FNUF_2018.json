@@ -1,0 +1,125 @@
+{
+	"schema_version": 2,
+	"description": "FNUF",
+	"corrections": [
+		{
+			"name": "FNUF",
+			"version": 1,
+			"inputs": [
+				{
+					"name": "systematic",
+					"type": "string",
+					"description": "Systematic variation"
+				},
+				{
+					"name": "eta",
+					"type": "real",
+					"description": "Photon eta"
+				},
+				{
+					"name": "r9",
+					"type": "real",
+					"description": "Photon full 5x5 R9, ratio E3x3/ERAW, where E3x3 is the energy sum of the 3 by 3 crystals surrounding the supercluster seed crystal and ERAW is the raw energy sum of the supercluster"
+				}
+			],
+			"output": {
+				"name": "Ecorr",
+				"type": "real",
+				"description": "Multiplicative correction to photon energy"
+			},
+			"data": {
+				"nodetype": "category",
+				"input": "systematic",
+				"content": [
+					{
+						"key": "nominal",
+						"value": {
+							"nodetype": "multibinning",
+							"inputs": [
+								"eta",
+								"r9"
+							],
+							"edges": [
+								[
+									0.0,
+									1.5,
+									6.0
+								],
+								[
+									0.0,
+									0.94,
+									999.0
+								]
+							],
+							"content": [
+								1.0,
+								1.0,
+								1.0,
+								1.0
+							],
+							"flow": "clamp"
+						}
+					},
+					{
+						"key": "up",
+						"value": {
+							"nodetype": "multibinning",
+							"inputs": [
+								"eta",
+								"r9"
+							],
+							"edges": [
+								[
+									0.0,
+									1.5,
+									6.0
+								],
+								[
+									0.0,
+									0.94,
+									999.0
+								]
+							],
+							"content": [
+								1.0007,
+								1.0022,
+								1.00005,
+								1.00251
+							],
+							"flow": "clamp"
+						}
+					},
+					{
+						"key": "down",
+						"value": {
+							"nodetype": "multibinning",
+							"inputs": [
+								"eta",
+								"r9"
+							],
+							"edges": [
+								[
+									0.0,
+									1.5,
+									6.0
+								],
+								[
+									0.0,
+									0.94,
+									999.0
+								]
+							],
+							"content": [
+								0.9993,
+								0.9978,
+								0.99995,
+								0.99749
+							],
+							"flow": "clamp"
+						}
+					}
+				]
+			}
+		}
+	]
+}

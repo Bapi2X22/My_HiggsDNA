@@ -1,0 +1,134 @@
+{
+	"schema_version": 2,
+	"description": "Material",
+	"corrections": [
+		{
+			"name": "Material",
+			"description": "Material correction",
+			"version": 1,
+			"inputs": [
+				{
+					"name": "systematic",
+					"type": "string",
+					"description": "Systematic variation"
+				},
+				{
+					"name": "SCEta",
+					"type": "real",
+					"description": "Photon Super Cluster eta"
+				},
+				{
+					"name": "r9",
+					"type": "real",
+					"description": "Photon full 5x5 R9, ratio E3x3/ERAW, where E3x3 is the energy sum of the 3 by 3 crystals surrounding the supercluster seed crystal and ERAW is the raw energy sum of the supercluster"
+				}
+			],
+			"output": {
+				"name": "Ecorr",
+				"type": "real",
+				"description": "Multiplicative correction to photon energy and pt"
+			},
+			"generic_formulas": null,
+			"data": {
+				"nodetype": "category",
+				"input": "systematic",
+				"content": [
+					{
+						"key": "up",
+						"value": {
+							"nodetype": "multibinning",
+							"inputs": [
+								"SCEta",
+								"r9"
+							],
+							"edges": [
+								[
+									0.0,
+									1.0,
+									1.5,
+									999.0
+								],
+								[
+									0.0,
+									0.94,
+									999.0
+								]
+							],
+							"content": [
+								1.000455,
+								1.000233,
+								1.002089,
+								1.002089,
+								1.00109,
+								1.002377
+							],
+							"flow": "clamp"
+						}
+					},
+					{
+						"key": "down",
+						"value": {
+							"nodetype": "multibinning",
+							"inputs": [
+								"SCEta",
+								"r9"
+							],
+							"edges": [
+								[
+									0.0,
+									1.0,
+									1.5,
+									999.0
+								],
+								[
+									0.0,
+									0.94,
+									999.0
+								]
+							],
+							"content": [
+								0.999545,
+								0.999767,
+								0.9979911,
+								0.9979911,
+								0.99891,
+								0.997623
+							],
+							"flow": "clamp"
+						}
+					}
+				],
+				"default": {
+					"nodetype": "multibinning",
+					"inputs": [
+						"SCEta",
+						"r9"
+					],
+					"edges": [
+						[
+							0.0,
+							1.0,
+							1.5,
+							999.0
+						],
+						[
+							0.0,
+							0.94,
+							999.0
+						]
+					],
+					"content": [
+						1.0,
+						1.0,
+						1.0,
+						1.0,
+						1.0,
+						1.0
+					],
+					"flow": "clamp"
+				}
+			}
+		}
+	],
+	"compound_corrections": null
+}

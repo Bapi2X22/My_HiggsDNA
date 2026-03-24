@@ -11,6 +11,7 @@ from higgs_dna.scripts.postprocessing.remote.slurm import slurm_postprocessing
 from higgs_dna.scripts.postprocessing.remote.htcondor import htcondor_postprocessing
 from concurrent.futures import ThreadPoolExecutor
 import yaml
+import glob
 
 # ---------------------- A few helping functions  ----------------------
 
@@ -300,6 +301,9 @@ def main():
     )
     (opt, args) = parser.parse_args()
 
+    # OBJECTS = ["dijet", "diphoton", "leptons"]
+    OBJECTS = ["diphoton"]
+
     BASEDIR = resources.files("higgs_dna").joinpath("")
 
     if (opt.batch == "condor") or ("slurm" in opt.batch):
@@ -440,15 +444,43 @@ def main():
 
 # The process var below is the function that will be executed in parallel for each systematic variation. It substitutes the old loop of the systematics to speed up the process.
 # Paths now must be ABSOLUTE!! - CD while multi thread is not a good idea!
+    # def process_var(var, var_dict, IN_PATH, OUT_PATH, SCRIPT_DIR, file, cat_dict, verbose_str, skip_normalisation_str):
+    #     target_dir = f"{OUT_PATH}/merged/{file}/{var_dict[var]}"
+    #     MKDIRP(target_dir)
+
+    #     command = f"merge_parquet.py --source {IN_PATH}/{file}/{var_dict[var]} --target {target_dir}/ --cats {cat_dict} {verbose_str} {skip_normalisation_str} {genBinning_str} --abs {custom_accumulator_str}"
+    #     logger.info(command)
+
+    #     # Execute the command using subprocess.run
+    #     subprocess.run(command, shell=True, cwd=SCRIPT_DIR, check=True)
+
     def process_var(var, var_dict, IN_PATH, OUT_PATH, SCRIPT_DIR, file, cat_dict, verbose_str, skip_normalisation_str):
-        target_dir = f"{OUT_PATH}/merged/{file}/{var_dict[var]}"
-        MKDIRP(target_dir)
 
-        command = f"merge_parquet.py --source {IN_PATH}/{file}/{var_dict[var]} --target {target_dir}/ --cats {cat_dict} {verbose_str} {skip_normalisation_str} {genBinning_str} --abs {custom_accumulator_str}"
-        logger.info(command)
+        logger.info(f"var = {var}, mapped dir = {var_dict[var]}")
 
-        # Execute the command using subprocess.run
-        subprocess.run(command, shell=True, cwd=SCRIPT_DIR, check=True)
+
+        for obj in OBJECTS:
+            source_dir = f"{IN_PATH}/{file}/{var_dict[var]}/{obj}"
+            target_dir = f"{OUT_PATH}/merged/{file}/{var_dict[var]}/{obj}"
+
+            if not os.path.exists(source_dir):
+                logger.warning(f"Skipping missing source: {source_dir}")
+                continue
+
+            MKDIRP(target_dir)
+
+            command = (
+                f"merge_parquet.py "
+                f"--source {source_dir} "
+                f"--target {target_dir}/ "
+                f"--cats {cat_dict} "
+                f"{verbose_str} {skip_normalisation_str} "
+                f"{genBinning_str} --abs {custom_accumulator_str}"
+            )
+
+            logger.info(command)
+            subprocess.run(command, shell=True, cwd=SCRIPT_DIR, check=True)
+
 
 # Loop to paralelize the loop over the "files", which are the ttH_125_preEE, etc. datasets
     def process_file(file, IN_PATH, OUT_PATH, SCRIPT_DIR, var_dict, cat_dict, verbose_str, skip_normalisation_str, opt):
@@ -471,18 +503,69 @@ def main():
                         logger.error(f"Error processing variable: {e}")
             else:
                 # Single nominal processing for MC
-                command = f"merge_parquet.py --source {IN_PATH}/{file}/nominal --target {target_path}/ --cats {cat_dict_loc} {verbose_str} {skip_normalisation_str} {genBinning_str} --abs {custom_accumulator_str}"
-                subprocess.run(command, shell=True, cwd=SCRIPT_DIR, check=True)
+                # command = f"merge_parquet.py --source {IN_PATH}/{file}/nominal --target {target_path}/ --cats {cat_dict_loc} {verbose_str} {skip_normalisation_str} {genBinning_str} --abs {custom_accumulator_str}"
+                # subprocess.run(command, shell=True, cwd=SCRIPT_DIR, check=True)
+                for obj in OBJECTS:
+                    source_dir = f"{IN_PATH}/{file}/nominal/{obj}"
+                    target_dir = f"{target_path}/nominal/{obj}"
+
+                    if not os.path.exists(source_dir):
+                        logger.warning(f"Skipping missing source: {source_dir}")
+                        continue
+
+                    MKDIRP(target_dir)
+
+                    command = (
+                        f"merge_parquet.py "
+                        f"--source {source_dir} "
+                        f"--target {target_dir}/ "
+                        f"--cats {cat_dict_loc} "
+                        f"{verbose_str} {skip_normalisation_str} "
+                        f"{genBinning_str} --abs {custom_accumulator_str}"
+                    )
+
+                    subprocess.run(command, shell=True, cwd=SCRIPT_DIR, check=True)
+
+        # else:
+        #     # Data processing
+        #     merged_target_path = f"{OUT_PATH}/merged/{file}/{file}_merged.parquet"
+        #     data_dir_path = f'{OUT_PATH}/merged/Data_{file.split("_")[-1]}'
+        #     if os.path.exists(merged_target_path):
+        #         raise Exception(f"The selected target path: {merged_target_path} already exists")
+        #     if not os.path.exists(data_dir_path):
+        #         MKDIRP(data_dir_path)
+        #     command = f'merge_parquet.py --source {IN_PATH}/{file}/nominal --target {data_dir_path}/{file}_ --cats {cat_dict_loc} {verbose_str} --is-data {genBinning_str} --abs {custom_accumulator_str}'
+        #     subprocess.run(command, shell=True, cwd=SCRIPT_DIR, check=True)
         else:
-            # Data processing
-            merged_target_path = f"{OUT_PATH}/merged/{file}/{file}_merged.parquet"
-            data_dir_path = f'{OUT_PATH}/merged/Data_{file.split("_")[-1]}'
-            if os.path.exists(merged_target_path):
-                raise Exception(f"The selected target path: {merged_target_path} already exists")
+            # Data processing (object-wise)
+            era = file.split("_")[-1]
+            data_dir_path = f"{OUT_PATH}/merged/Data_{era}"
+
             if not os.path.exists(data_dir_path):
                 MKDIRP(data_dir_path)
-            command = f'merge_parquet.py --source {IN_PATH}/{file}/nominal --target {data_dir_path}/{file}_ --cats {cat_dict_loc} {verbose_str} --is-data {genBinning_str} --abs {custom_accumulator_str}'
-            subprocess.run(command, shell=True, cwd=SCRIPT_DIR, check=True)
+
+            for obj in OBJECTS:
+                source_dir = f"{IN_PATH}/{file}/nominal/{obj}"
+                target_prefix = f"{data_dir_path}/{file}_{obj}_"
+
+                if not os.path.exists(source_dir):
+                    logger.warning(f"Skipping missing data source: {source_dir}")
+                    continue
+
+                command = (
+                    f"merge_parquet.py "
+                    f"--source {source_dir} "
+                    f"--target {target_prefix} "
+                    f"--cats {cat_dict_loc} "
+                    f"{verbose_str} "
+                    f"--is-data "
+                    f"{genBinning_str} "
+                    f"--abs {custom_accumulator_str}"
+                )
+
+                logger.info(command)
+                subprocess.run(command, shell=True, cwd=SCRIPT_DIR, check=True)
+
 
     def root_process_var(cat_dict_loc, var_dict_loc, IN_PATH, OUT_PATH, SCRIPT_DIR, file, verbose_str, skip_normalisation_str):
         file = file.split("\n")[0]
@@ -574,8 +657,70 @@ def main():
                         else:
                             logger.info(f'No merged parquet found for {file} in the directory: {OUT_PATH}/merged/Data_{file.split("_")[-1]}')
 
+        # if opt.root:
+        #     logger.info("Starting root step")
+        #     if opt.syst:
+        #         logger.info("you've selected the run with systematics")
+        #         args = "--do-syst"
+        #     else:
+        #         logger.info("you've selected the run without systematics")
+        #         args = ""
+
+        #     if opt.merge:
+        #         IN_PATH = OUT_PATH
+        #     # Note, in my version of HiggsDNA I run the analysis splitting data per Era in different datasets
+        #     # the treatment of data here is tested just with that structure
+        #     with open(dirlist_path) as fl:
+        #         files = fl.readlines()
+        #         for file in files:
+        #             file = file.split("\n")[0]
+        #             if "data" not in file.lower() and (not "unknown" in decompose_string(file, process_map, era_flag=opt.eraFlag)):
+        #                 if os.path.exists(f"{OUT_PATH}/root/{file}"):
+        #                     raise Exception(
+        #                         f"The selected target path: {OUT_PATH}/root/{file} already exists"
+        #                     )
+        #                 print(file)
+        #                 if os.listdir(f"{IN_PATH}/merged/{file}/"):
+        #                     logger.info(f"Found merged files {IN_PATH}/merged/{file}/")
+        #                 else:
+        #                     raise Exception(f"Merged parquet not found at {IN_PATH}/merged/")
+        #                 MKDIRP(f"{OUT_PATH}/root/{file}")
+        #                 os.chdir(SCRIPT_DIR)
+        #                 os.system(
+        #                     f"convert_parquet_to_root.py {IN_PATH}/merged/{file}/merged.parquet {OUT_PATH}/root/{file}/merged.root mc --process {decompose_string(file, process_map)} {args} --cats {cat_dict_loc} --vars {var_dict_loc} {verbose_str} {genBinning_str} {tbasket_str} {outfiles_map_str} --abs"
+        #                 )
+        #             elif "data" in file.lower():
+        #                 if os.listdir(f'{IN_PATH}/merged/Data_{file.split("_")[-1]}/'):
+        #                     logger.info(
+        #                         f'Found merged data files in: {IN_PATH}/merged/Data_{file.split("_")[-1]}/'
+        #                     )
+        #                 else:
+        #                     raise Exception(
+        #                         f'Merged parquet not found at: {IN_PATH}/merged/Data_{file.split("_")[-1]}/'
+        #                     )
+
+        #                 if os.path.exists(
+        #                     f'{OUT_PATH}/root/Data/allData_{file.split("_")[-1]}.root'
+        #                 ):
+        #                     logger.info(
+        #                         f'Data already converted: {OUT_PATH}/root/Data/allData_{file.split("_")[-1]}.root'
+        #                     )
+        #                     continue
+        #                 elif not os.path.exists(f"{OUT_PATH}/root/Data/"):
+        #                     MKDIRP(f"{OUT_PATH}/root/Data")
+        #                     os.chdir(SCRIPT_DIR)
+        #                     os.system(
+        #                         f'convert_parquet_to_root.py {IN_PATH}/merged/Data_{file.split("_")[-1]}/allData_merged.parquet {OUT_PATH}/root/Data/allData_{file.split("_")[-1]}.root data --cats {cat_dict_loc} --vars {var_dict_loc} {verbose_str} {genBinning_str} {tbasket_str} {outfiles_map_str} --abs'
+        #                     )
+        #                 else:
+        #                     os.chdir(SCRIPT_DIR)
+        #                     os.system(
+        #                         f'convert_parquet_to_root.py {IN_PATH}/merged/Data_{file.split("_")[-1]}/allData_merged.parquet {OUT_PATH}/root/Data/allData_{file.split("_")[-1]}.root data --cats {cat_dict_loc} --vars {var_dict_loc} {verbose_str} {genBinning_str} {tbasket_str} {outfiles_map_str} --abs'
+        #                     )
+
         if opt.root:
             logger.info("Starting root step")
+
             if opt.syst:
                 logger.info("you've selected the run with systematics")
                 args = "--do-syst"
@@ -585,55 +730,102 @@ def main():
 
             if opt.merge:
                 IN_PATH = OUT_PATH
-            # Note, in my version of HiggsDNA I run the analysis splitting data per Era in different datasets
-            # the treatment of data here is tested just with that structure
+
             with open(dirlist_path) as fl:
                 files = fl.readlines()
-                for file in files:
-                    file = file.split("\n")[0]
-                    if "data" not in file.lower() and (not "unknown" in decompose_string(file, process_map, era_flag=opt.eraFlag)):
-                        if os.path.exists(f"{OUT_PATH}/root/{file}"):
-                            raise Exception(
-                                f"The selected target path: {OUT_PATH}/root/{file} already exists"
-                            )
-                        print(file)
-                        if os.listdir(f"{IN_PATH}/merged/{file}/"):
-                            logger.info(f"Found merged files {IN_PATH}/merged/{file}/")
-                        else:
-                            raise Exception(f"Merged parquet not found at {IN_PATH}/merged/")
-                        MKDIRP(f"{OUT_PATH}/root/{file}")
-                        os.chdir(SCRIPT_DIR)
-                        os.system(
-                            f"convert_parquet_to_root.py {IN_PATH}/merged/{file}/merged.parquet {OUT_PATH}/root/{file}/merged.root mc --process {decompose_string(file, process_map)} {args} --cats {cat_dict_loc} --vars {var_dict_loc} {verbose_str} {genBinning_str} {tbasket_str} {outfiles_map_str} --abs"
-                        )
-                    elif "data" in file.lower():
-                        if os.listdir(f'{IN_PATH}/merged/Data_{file.split("_")[-1]}/'):
-                            logger.info(
-                                f'Found merged data files in: {IN_PATH}/merged/Data_{file.split("_")[-1]}/'
-                            )
-                        else:
-                            raise Exception(
-                                f'Merged parquet not found at: {IN_PATH}/merged/Data_{file.split("_")[-1]}/'
-                            )
 
-                        if os.path.exists(
-                            f'{OUT_PATH}/root/Data/allData_{file.split("_")[-1]}.root'
-                        ):
-                            logger.info(
-                                f'Data already converted: {OUT_PATH}/root/Data/allData_{file.split("_")[-1]}.root'
+            for file in files:
+                file = file.strip()
+
+                # =========================
+                # ======== MC ============
+                # =========================
+                if "data" not in file.lower() and (not "unknown" in decompose_string(file, process_map, era_flag=opt.eraFlag)):
+
+                    for obj in OBJECTS:
+                        # src = f"{IN_PATH}/merged/{file}/nominal/{obj}/merged.parquet"
+
+                        parquet_files = glob.glob(
+                            f"{IN_PATH}/merged/{file}/nominal/{obj}/*_merged.parquet"
+                        )
+
+                        if not parquet_files:
+                            logger.warning(f"Missing parquet for ROOT conversion: {IN_PATH}/merged/{file}/nominal/{obj}")
+                            continue
+
+                        if len(parquet_files) > 1:
+                            logger.error(
+                                f"Multiple merged parquet files found in {IN_PATH}/merged/{file}/nominal/{obj}: {parquet_files}"
                             )
                             continue
-                        elif not os.path.exists(f"{OUT_PATH}/root/Data/"):
-                            MKDIRP(f"{OUT_PATH}/root/Data")
-                            os.chdir(SCRIPT_DIR)
-                            os.system(
-                                f'convert_parquet_to_root.py {IN_PATH}/merged/Data_{file.split("_")[-1]}/allData_merged.parquet {OUT_PATH}/root/Data/allData_{file.split("_")[-1]}.root data --cats {cat_dict_loc} --vars {var_dict_loc} {verbose_str} {genBinning_str} {tbasket_str} {outfiles_map_str} --abs'
-                            )
-                        else:
-                            os.chdir(SCRIPT_DIR)
-                            os.system(
-                                f'convert_parquet_to_root.py {IN_PATH}/merged/Data_{file.split("_")[-1]}/allData_merged.parquet {OUT_PATH}/root/Data/allData_{file.split("_")[-1]}.root data --cats {cat_dict_loc} --vars {var_dict_loc} {verbose_str} {genBinning_str} {tbasket_str} {outfiles_map_str} --abs'
-                            )
+
+                        src = f"{IN_PATH}/merged/{file}/nominal/{obj}"
+
+                        outdir = f"{OUT_PATH}/root/{file}/{obj}"
+                        outfile = f"{outdir}/merged.root"
+
+                        if not os.path.exists(src):
+                            logger.warning(f"Missing parquet for ROOT conversion: {src}")
+                            continue
+
+                        if os.path.exists(outfile):
+                            logger.info(f"ROOT file already exists: {outfile}")
+                            continue
+
+                        MKDIRP(outdir)
+                        os.chdir(SCRIPT_DIR)
+
+                        logger.info(f"Converting {file} [{obj}] to ROOT")
+
+                        os.system(
+                            f"convert_parquet_to_root.py "
+                            f"{src} "
+                            f"{outfile} "
+                            f"mc "
+                            f"--process {decompose_string(file, process_map)} "
+                            f"{args} "
+                            f"--cats {cat_dict_loc} "
+                            f"--vars {var_dict_loc} "
+                            f"{verbose_str} {genBinning_str} {tbasket_str} "
+                            f"{outfiles_map_str} --abs"
+                        )
+
+
+                # =========================
+                # ======== DATA ==========
+                # =========================
+                elif "data" in file.lower():
+                    era = file.split("_")[-1]
+
+                    for obj in OBJECTS:
+                        src = f"{IN_PATH}/merged/Data_{era}/allData_{obj}_merged.parquet"
+                        outdir = f"{OUT_PATH}/root/Data/{obj}"
+                        outfile = f"{outdir}/allData_{era}.root"
+
+                        if not os.path.exists(src):
+                            logger.warning(f"Missing data parquet for ROOT conversion: {src}")
+                            continue
+
+                        if os.path.exists(outfile):
+                            logger.info(f"Data ROOT already exists: {outfile}")
+                            continue
+
+                        MKDIRP(outdir)
+                        os.chdir(SCRIPT_DIR)
+
+                        logger.info(f"Converting Data {era} [{obj}] to ROOT")
+
+                        os.system(
+                            f"convert_parquet_to_root.py "
+                            f"{src} "
+                            f"{outfile} "
+                            f"data "
+                            f"--cats {cat_dict_loc} "
+                            f"--vars {var_dict_loc} "
+                            f"{verbose_str} {genBinning_str} {tbasket_str} "
+                            f"{outfiles_map_str} --abs"
+                        )
+
 
         if opt.ws:
             if not os.listdir(opt.final_fit):
